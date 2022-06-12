@@ -1,0 +1,2 @@
+rootProject.name = 'com.reborn.tasks'
+include('lib')

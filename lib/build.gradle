@@ -1,0 +1,95 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+}
+
+group 'io.github.devreborn'
+version = '0.1.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+publishing {
+    publications{
+
+        mavenJava(MavenPublication){
+
+            groupId = 'io.github.devreborn'
+            artifactId = 'java-tasks'
+            version = project.version
+            from components.java
+
+            pom {
+                name = 'Java Tasks'
+                description = 'A task library to make Parallelisation easier in java'
+                url = 'https://github.com/DevReborn/java-tasks'
+                inceptionYear = '2022'
+
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'http://www.opensource.org/licenses/mit-license.php'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'devreborn'
+                        name = 'Luke Bourne'
+                        email = 'devreborn@outlook.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git:github.com/DevReborn/java-tasks.git'
+                    developerConnection = 'scm:git:ssh://github.com/DevReborn/java-tasks.git'
+                    url = 'https://github.com/DevReborn/java-tasks'
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = "OSSRH"
+            url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            credentials {
+                username = project.properties["ossrhUsername"]
+                password = project.properties["ossrhPassword"]
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
+}
+
+javadoc {
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
+    }
+}
+
+tasks.named('jar') {
+    manifest {
+        attributes(
+            'Specification-Title': 'Java Tasks',
+            'Specification-Version': project.version,
+            'Implementation-Title': rootProject.name,
+            'Implementation-Version': project.version)
+    }
+}

@@ -1,5 +1,7 @@
 package com.reborn.tasks;
 
+import com.reborn.tasks.common.Cancel;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -26,6 +28,7 @@ public class DeferredValueTaskTests {
         final ArrayList<String> messages = new ArrayList<>();
         final IValueTask<String> task = new DeferredValueTask<String>(t -> {
             t.setSucceeded("Hello");
+            return Cancel.empty;
         }, executor)
         .onSuccess(messages::add);
 

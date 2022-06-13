@@ -1,5 +1,8 @@
 package com.reborn.tasks;
 
+import com.reborn.tasks.common.Cancel;
+import com.reborn.tasks.common.CompoundCancelable;
+import com.reborn.tasks.common.ICancelable;
 import com.reborn.tasks.common.ThrowingConsumer;
 import com.reborn.tasks.exceptions.CompoundTaskException;
 
@@ -33,14 +36,15 @@ public class Tasks {
         try {
             final Class<?> looperClass = Class.forName("android.os.Looper");
         } catch (ClassNotFoundException e) {
-            return _factory = new TaskFactory();
+            return _factory = new TaskFactory(TaskExecutor.getSingleton());
         }
 
         try {
             final Object instance = Class.forName("com.reborn.tasks.android.AndroidTaskFactory").newInstance();
             return _factory = (ITaskFactory) instance;
         } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("java-tasks-android is needed to run tasks on the android platform", e);
+            throw new IllegalStateException("android-tasks is needed to run tasks on the android platform.\r\n" +
+                    "Visit https://github.com/DevReborn/android-tasks for more information", e);
         } catch (IllegalAccessException | InstantiationException e) {
             throw new IllegalStateException("Something went wrong when trying to create the TaskFactory", e);
         }
@@ -53,17 +57,27 @@ public class Tasks {
         return getTaskFactory().fromResult(result);
     }
 
-    public static <T> IDeferredValueTask<T> createDeferred(final Consumer<IDeferredValueTask<T>> consumer) {
-        return getTaskFactory().createDeferred(consumer);
+    public static <T> IDeferredValueTask<T> createDeferred(final Function<IDeferredValueTask<T>, ICancelable> function) {
+        return getTaskFactory().createDeferred(function);
+    }
+    public static <T> IDeferredValueTask<T> createDeferred(final Consumer<IDeferredValueTask<T>> function) {
+        return createDeferred(t -> {
+            function.accept(t);
+            return Cancel.empty;
+        });
+    }
+    public static <T> IDeferredValueTask<T> createDeferred() {
+        return getTaskFactory().createDeferred(null);
     }
 
     public static IValueTask<ITask[]> executeAll(final ITask... tasks) {
         return createDeferred(def -> {
+            final CompoundCancelable cancelable = new CompoundCancelable();
             for (final ITask task : tasks) {
-                task.onComplete(() -> {
-                    if(Arrays.stream(tasks).allMatch(x -> x.getState() == TaskState.SUCCEEDED)) {
+                final ICancelable taskCancelable = task.onComplete(() -> {
+                    if (Arrays.stream(tasks).allMatch(x -> x.getState() == TaskState.SUCCEEDED)) {
                         def.setSucceeded(tasks);
-                    } else if(Arrays.stream(tasks).allMatch(x ->
+                    } else if (Arrays.stream(tasks).allMatch(x ->
                             x.getState() == TaskState.SUCCEEDED || x.getState() == TaskState.ERRORED)) {
 
                         final List<Throwable> throwables = Arrays.stream(tasks)
@@ -73,7 +87,9 @@ public class Tasks {
                         def.setErrored(new CompoundTaskException(throwables));
                     }
                 }).onError(x -> true).execute();
+                cancelable.add(taskCancelable);
             }
+            return cancelable;
         });
     }
 

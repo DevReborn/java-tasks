@@ -2,14 +2,15 @@ package com.reborn.tasks;
 
 import com.reborn.tasks.common.ICancelable;
 
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class DeferredValueTask<T> extends BaseTask<T> implements IDeferredValueTask<T> {
-    private final Consumer<IDeferredValueTask<T>> _callable;
+    private final Function<IDeferredValueTask<T>, ICancelable> _callable;
     private T _result;
     private boolean _resultSet;
+    private ICancelable _cancelable;
 
-    public DeferredValueTask(final Consumer<IDeferredValueTask<T>> callable,
+    public DeferredValueTask(final Function<IDeferredValueTask<T>, ICancelable> callable,
                              final ITaskExecutor executor) {
         super(executor);
         _callable = callable;
@@ -56,8 +57,17 @@ public class DeferredValueTask<T> extends BaseTask<T> implements IDeferredValueT
             onResultSucceeded(_result);
         } else {
             if (_preExecute != null) _preExecute.run();
-            if (_callable != null) _callable.accept(this);
+            if (_callable != null) {
+                _cancelable = _callable.apply(this);
+            }
         }
         return this;
+    }
+
+    @Override
+    public void cancel() {
+        super.cancel();
+        if(_cancelable != null)
+            _cancelable.cancel();
     }
 }

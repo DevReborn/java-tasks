@@ -18,6 +18,10 @@ public class Tasks {
         _factorySupplier = factorySupplier;
         _factory = null;
     }
+    public static void setTaskFactory(final ITaskFactory factory) {
+        _factorySupplier = null;
+        _factory = factory;
+    }
 
     public static ITaskFactory getTaskFactory() {
         if(_factory != null)
@@ -28,10 +32,17 @@ public class Tasks {
 
         try {
             final Class<?> looperClass = Class.forName("android.os.Looper");
-            final Object instance = Class.forName("com.reborn.common.android.threading.AndroidTaskFactory").newInstance();
-            return _factory = (ITaskFactory) instance;
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+        } catch (ClassNotFoundException e) {
             return _factory = new TaskFactory();
+        }
+
+        try {
+            final Object instance = Class.forName("com.reborn.tasks.android.AndroidTaskFactory").newInstance();
+            return _factory = (ITaskFactory) instance;
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("java-tasks-android is needed to run tasks on the android platform", e);
+        } catch (IllegalAccessException | InstantiationException e) {
+            throw new IllegalStateException("Something went wrong when trying to create the TaskFactory", e);
         }
     }
 
@@ -47,9 +58,7 @@ public class Tasks {
     }
 
     public static IValueTask<ITask[]> executeAll(final ITask... tasks) {
-        return getTaskFactory().createDeferred(def -> {
-//            final CompositeCancelable composite = Cancel.composite();
-
+        return createDeferred(def -> {
             for (final ITask task : tasks) {
                 task.onComplete(() -> {
                     if(Arrays.stream(tasks).allMatch(x -> x.getState() == TaskState.SUCCEEDED)) {
@@ -64,16 +73,14 @@ public class Tasks {
                         def.setErrored(new CompoundTaskException(throwables));
                     }
                 }).onError(x -> true).execute();
-//                composite.assign(cancelable);
             }
         });
     }
 
     public static <TIn, TOut> IValueTask<TOut> then(final IValueTask<TIn> runningTask,
                                                     final Function<TIn, TOut> converter) {
-        return getTaskFactory().createDeferred(task -> {
-            runningTask
-                    .onSuccess(valueIn -> task.setSucceeded(converter.apply(valueIn)))
+        return createDeferred(task -> {
+            runningTask.onSuccess(valueIn -> task.setSucceeded(converter.apply(valueIn)))
                     .onError(e -> {
                         task.setErrored(e);
                         return true;

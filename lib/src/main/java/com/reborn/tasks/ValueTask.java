@@ -69,26 +69,6 @@ public class ValueTask<T> implements IValueTask<T> {
         else _onUpdate = _onUpdate.andThen(onUpdate);
         return this;
     }
-    @Override
-    public ITask onUpdate(final BiConsumer<Float, String> onUpdate) {
-        return onUpdate(o -> {
-            if(o instanceof Pair) {
-                final Pair pair = (Pair) o;
-                if(pair.first instanceof Float && pair.second instanceof String) {
-                    onUpdate.accept((Float)pair.first, (String)pair.second);
-                } else {
-                    final String firstName = pair.first.getClass().getSimpleName();
-                    final String secondName = pair.second.getClass().getSimpleName();
-                    throw new IllegalStateException("update object was a Pair<"
-                            + firstName + ", " + secondName + "> and not of type Pair<Float, String>");
-                }
-            } else {
-                final String simpleName = o.getClass().getSimpleName();
-                throw new IllegalStateException("update object was a "
-                        + simpleName + " and not of type Pair<Float, String>");
-            }
-        });
-    }
 
     @Override
     public IValueTask<T> onComplete(final BiConsumer<T, Boolean> onComplete) {

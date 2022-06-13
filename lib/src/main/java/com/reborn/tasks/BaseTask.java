@@ -84,11 +84,11 @@ public abstract class BaseTask<T> implements IValueTask<T> {
 
     protected void checkForValidState(final String action) {
         if(_state == TaskState.EXECUTING)
-            throw new IllegalStateException("Cannot " + action + " an already running task");
+            throw new IllegalStateException("Cannot " + action + " a already running task");
         if(_state == TaskState.CANCELED)
-            throw new IllegalStateException("Cannot " + action + " an task that has been canceled");
+            throw new IllegalStateException("Cannot " + action + " a task that has been canceled");
         if(_state == TaskState.ERRORED || _state == TaskState.SUCCEEDED)
-            throw new IllegalStateException("Cannot " + action + " an task that has already run.");
+            throw new IllegalStateException("Cannot " + action + " a task that has already run.");
     }
 
     protected void onResultSucceeded(final T result) {
@@ -120,5 +120,15 @@ public abstract class BaseTask<T> implements IValueTask<T> {
             _state = TaskState.ERRORED;
             throw new TaskException(throwable);
         }
+    }
+
+    @Override
+    public boolean isCanceled() {
+        return _state == TaskState.CANCELED;
+    }
+
+    @Override
+    public void cancel() {
+        _state = TaskState.CANCELED;
     }
 }

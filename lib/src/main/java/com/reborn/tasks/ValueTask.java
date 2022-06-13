@@ -1,5 +1,6 @@
 package com.reborn.tasks;
 
+import com.reborn.tasks.common.ICancelable;
 import com.reborn.tasks.common.ThrowingFunction;
 
 import java.util.function.Consumer;
@@ -39,7 +40,7 @@ public class ValueTask<T> extends BaseTask<T> {
     }
 
     @Override
-    public void execute() {
+    public ICancelable execute() {
         checkForValidState("execute");
 
         _state = TaskState.EXECUTING;
@@ -50,11 +51,13 @@ public class ValueTask<T> extends BaseTask<T> {
             if(_preExecute != null) _preExecute.run();
             _taskExecutor.runTask(this::runOnThread);
         }
+        return this;
     }
 
     private void runOnThread() {
         try {
-            _result = _callable.apply(createTaskOperator(_onUpdate));
+            final ITaskOperator taskOperator = createTaskOperator(_onUpdate);
+            _result = _callable.apply(taskOperator);
             _resultSet = true;
             onResultSucceeded(_result);
         } catch (final Exception e) {

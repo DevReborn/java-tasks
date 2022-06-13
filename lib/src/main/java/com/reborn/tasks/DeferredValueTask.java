@@ -1,5 +1,7 @@
 package com.reborn.tasks;
 
+import com.reborn.tasks.common.ICancelable;
+
 import java.util.function.Consumer;
 
 public class DeferredValueTask<T> extends BaseTask<T> implements IDeferredValueTask<T> {
@@ -45,7 +47,7 @@ public class DeferredValueTask<T> extends BaseTask<T> implements IDeferredValueT
     }
 
     @Override
-    public void execute() {
+    public ICancelable execute() {
         checkForValidState("re-execute");
 
         _state = TaskState.EXECUTING;
@@ -56,5 +58,6 @@ public class DeferredValueTask<T> extends BaseTask<T> implements IDeferredValueT
             if (_preExecute != null) _preExecute.run();
             if (_callable != null) _callable.accept(this);
         }
+        return this;
     }
 }

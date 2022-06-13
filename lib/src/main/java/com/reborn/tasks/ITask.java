@@ -1,13 +1,14 @@
 package com.reborn.tasks;
 
+import com.reborn.tasks.common.ICancelable;
 import com.reborn.tasks.common.Pair;
 
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public interface ITask {
-    void execute();
+public interface ITask extends ICancelable {
+    ICancelable execute();
     TaskState getState();
     Throwable getException();
 

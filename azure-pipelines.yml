@@ -10,7 +10,9 @@ pool:
   vmImage: ubuntu-latest
 
 variables:
-  isMaster: $[eq(variables['Build.SourceBranchName'], 'master')]
+  - group: maven-publish-variables
+  - name: isMaster
+    value: $[eq(variables['Build.SourceBranchName'], 'master')]
 
 steps:
 - task: Gradle@2

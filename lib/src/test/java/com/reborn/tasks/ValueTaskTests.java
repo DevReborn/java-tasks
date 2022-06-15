@@ -6,8 +6,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -32,7 +30,7 @@ public class ValueTaskTests {
             messages.add(1);
             return null;
         }, executor)
-        .onExecuted(() -> messages.add(0))
+        .onExecute(() -> messages.add(0))
         .onSuccess(() -> messages.add(2))
         .onError(throwable -> {messages.add(3);})
         .onComplete(() -> messages.add(4));
@@ -51,7 +49,7 @@ public class ValueTaskTests {
         final ITask task = new ValueTask<>(op -> {
             throw new Exception("hello!");
         }, executor)
-        .onExecuted(() -> messages.add(0))
+        .onExecute(() -> messages.add(0))
         .onError(throwable -> {messages.add(1);})
         .onSuccess(() -> messages.add(2))
         .onComplete(throwable -> messages.add(3));

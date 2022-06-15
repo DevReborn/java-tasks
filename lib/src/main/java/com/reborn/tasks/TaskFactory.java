@@ -4,9 +4,6 @@ import com.reborn.tasks.common.ICancelable;
 import com.reborn.tasks.common.ThrowingConsumer;
 import com.reborn.tasks.common.ThrowingFunction;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class TaskFactory implements ITaskFactory {

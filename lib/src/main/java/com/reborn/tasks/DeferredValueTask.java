@@ -6,24 +6,19 @@ import java.util.function.Function;
 
 public class DeferredValueTask<T> extends BaseTask<T> implements IDeferredValueTask<T> {
     private final Function<IDeferredValueTask<T>, ICancelable> _callable;
-    private T _result;
-    private boolean _resultSet;
+    private final ITaskExecutor _defaultExecutor;
+
     private ICancelable _cancelable;
+    private ITaskExecutor _executor;
 
     public DeferredValueTask(final Function<IDeferredValueTask<T>, ICancelable> callable,
                              final ITaskExecutor executor) {
-        super(executor);
         _callable = callable;
+        _defaultExecutor = executor;
     }
     public DeferredValueTask(final ITaskExecutor executor) {
-        super(executor);
+        _defaultExecutor = executor;
         _callable = null;
-    }
-
-    @Override
-    public T getResult() {
-        execute();
-        return _result;
     }
 
     public void setSucceeded(final T result) {
@@ -33,7 +28,7 @@ public class DeferredValueTask<T> extends BaseTask<T> implements IDeferredValueT
         _result = result;
         _resultSet = true;
         if(_state == TaskState.EXECUTING) {
-            onResultSucceeded(result);
+            onResultSucceeded(result, _executor);
         }
     }
 
@@ -43,18 +38,20 @@ public class DeferredValueTask<T> extends BaseTask<T> implements IDeferredValueT
 
         _exception = throwable;
         if(_state == TaskState.EXECUTING) {
-            onResultErrored(_exception);
+            onResultErrored(_exception, _executor);
         }
     }
 
     @Override
-    public ICancelable execute() {
+    public ICancelable execute(final ITaskExecutor executor) {
         checkForValidState("re-execute");
+
+        _executor = executor == null ? _defaultExecutor : executor;
 
         _state = TaskState.EXECUTING;
         if(_resultSet) {
             if(_preExecute != null) _preExecute.run();
-            onResultSucceeded(_result);
+            onResultSucceeded(_result, _executor);
         } else {
             if (_preExecute != null) _preExecute.run();
             if (_callable != null) {

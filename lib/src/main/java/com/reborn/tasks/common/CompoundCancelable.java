@@ -1,14 +1,15 @@
 package com.reborn.tasks.common;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-public class CompoundCancelable implements ICancelable {
+public class CompoundCancelable extends Cancel {
     private final List<ICancelable> _cancelables;
-    private boolean _isCanceled;
 
     public CompoundCancelable(final ICancelable... cancelables) {
-        _cancelables = Arrays.asList(cancelables);
+        _cancelables = new ArrayList<>();
+        Collections.addAll(_cancelables, cancelables);
     }
 
     public void add(final ICancelable cancelable) {
@@ -16,13 +17,7 @@ public class CompoundCancelable implements ICancelable {
     }
 
     @Override
-    public boolean isCanceled() {
-        return _isCanceled;
-    }
-
-    @Override
-    public void cancel() {
-        _isCanceled = true;
+    protected void onCanceled() {
         for (final ICancelable cancelable : _cancelables) {
             cancelable.cancel();
         }

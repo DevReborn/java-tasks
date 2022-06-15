@@ -7,29 +7,35 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public abstract class BaseTask<T> implements IValueTask<T> {
-    protected TaskState _state = TaskState.NOT_EXECUTED;
+    protected T _result;
+    protected boolean _resultSet;
     protected Throwable _exception;
+
+    protected TaskState _state = TaskState.NOT_EXECUTED;
     protected Runnable _preExecute;
     protected Consumer<T> _onSuccess;
     protected Consumer<Object> _onUpdate;
     protected BiConsumer<T, Boolean> _onComplete;
     protected Function<Throwable, Boolean> _onError;
 
-    private final ITaskExecutor _executor;
-
-    public BaseTask(final ITaskExecutor executor) {
-        _executor = executor;
+    @Override
+    public T getResult(final ITaskExecutor executor) {
+        if(_resultSet)
+            return _result;
+        if(_exception != null && _state == TaskState.ERRORED)
+            throw new IllegalStateException("Cannot get result of task that has errored");
+        throw new IllegalStateException("Cannot get result of task before its completed");
     }
 
     @Override
-    public ITask onExecuted(final Runnable onExecuted) {
+    public ITask onExecute(final Runnable onExecute) {
         checkForValidState("alter");
-        if (_preExecute == null) _preExecute = onExecuted;
+        if (_preExecute == null) _preExecute = onExecute;
         else {
             final Runnable oldPreExecute = _preExecute;
             _preExecute = () -> {
                 oldPreExecute.run();
-                onExecuted.run();
+                onExecute.run();
             };
         }
         return this;
@@ -91,9 +97,9 @@ public abstract class BaseTask<T> implements IValueTask<T> {
             throw new IllegalStateException("Cannot " + action + " a task that has already run.");
     }
 
-    protected void onResultSucceeded(final T result) {
+    protected void onResultSucceeded(final T result, final ITaskExecutor executor) {
         if(_onSuccess != null || _onComplete != null) {
-            _executor.postback(() -> {
+            executor.postback(() -> {
                 _state = TaskState.SUCCEEDED;
                 if(_onSuccess != null) _onSuccess.accept(result);
                 if(_onComplete != null) _onComplete.accept(result, true);
@@ -103,10 +109,10 @@ public abstract class BaseTask<T> implements IValueTask<T> {
         }
     }
 
-    protected void onResultErrored(final Throwable throwable) {
+    protected void onResultErrored(final Throwable throwable, final ITaskExecutor executor) {
         _exception = throwable;
         if(_onError != null || _onComplete != null) {
-            _executor.postback(() -> {
+            executor.postback(() -> {
                 _state = TaskState.ERRORED;
                 if(_onError != null) {
                     final Boolean swallowException = _onError.apply(throwable);

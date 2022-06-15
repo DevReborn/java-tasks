@@ -69,7 +69,7 @@ As you can see the callback functions are easy to use and understand and can be 
 ## Deferred Task
 
 For cases where you need a Promise-style task like in Javascript, there is the `IDeferredValueTask<T>` and `IDeferredTask`:
-```
+```java
 IDeferredValueTask<Result> deferredValueTask = Tasks.deferredValue(t -> {
     if(done) {
         t.setSucceeded("Done!");
@@ -91,7 +91,7 @@ IDeferredTask deferredTask = Tasks.deferred(t -> {
 
 A deferred task extends `IValueTask` and `ITask` so once its created can be treated exactly the same as any other task. The only difference is that a deferred tasks completion is set by another function calling the `setSucceeded` or `setErrored` function. This is mostly useful is you are using other libaries that using threading and need to integrate them into your task:
 
-```
+```java
 IDeferredValueTask<Result> deferredValueTask = Tasks.deferredValue(t -> {
     otherLibrary.callApi(apiResult -> {
         t.setSucceeded(apiResult);

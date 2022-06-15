@@ -4,7 +4,6 @@ import com.reborn.tasks.common.ICancelable;
 import com.reborn.tasks.common.ThrowingConsumer;
 import com.reborn.tasks.common.ThrowingFunction;
 
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 public interface ITaskFactory {

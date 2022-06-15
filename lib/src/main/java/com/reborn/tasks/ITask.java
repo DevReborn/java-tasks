@@ -8,11 +8,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public interface ITask extends ICancelable {
-    ICancelable execute();
+    default ICancelable execute() {
+        return execute(null);
+    }
+    ICancelable execute(final ITaskExecutor executor);
     TaskState getState();
     Throwable getException();
 
-    ITask onExecuted(final Runnable onExecuted);
+    ITask onExecute(final Runnable onExecuted);
 
     ITask onSuccess(final Runnable onSuccess);
 

@@ -4,6 +4,7 @@ import com.reborn.tasks.common.Cancel;
 import com.reborn.tasks.common.CompoundCancelable;
 import com.reborn.tasks.common.ICancelable;
 import com.reborn.tasks.common.ThrowingConsumer;
+import com.reborn.tasks.common.ThrowingFunction;
 import com.reborn.tasks.exceptions.CompoundTaskException;
 
 import java.util.Arrays;
@@ -53,25 +54,34 @@ public class Tasks {
     public static ITask create(final ThrowingConsumer<ITaskOperator> consumer) {
         return getTaskFactory().create(consumer);
     }
+    public static <T> IValueTask<T> create(final ThrowingFunction<ITaskOperator, T> consumer) {
+        return getTaskFactory().create(consumer);
+    }
     public static <T> IValueTask<T> fromResult(final T result) {
         return getTaskFactory().fromResult(result);
     }
 
-    public static <T> IDeferredValueTask<T> createDeferred(final Function<IDeferredValueTask<T>, ICancelable> function) {
+    public static <T> IDeferredValueTask<T> deferredValue(final Function<IDeferredValueTask<T>, ICancelable> function) {
         return getTaskFactory().createDeferred(function);
     }
-    public static <T> IDeferredValueTask<T> createDeferred(final Consumer<IDeferredValueTask<T>> function) {
-        return createDeferred(t -> {
+    public static <T> IDeferredValueTask<T> deferredValue(final Consumer<IDeferredValueTask<T>> function) {
+        return deferredValue(t -> {
             function.accept(t);
             return Cancel.empty;
         });
     }
-    public static <T> IDeferredValueTask<T> createDeferred() {
-        return getTaskFactory().createDeferred(null);
+    public static IDeferredTask deferred(final Function<IDeferredTask, ICancelable> function) {
+        return getTaskFactory().createDeferred(function::apply);
+    }
+    public static IDeferredTask deferred(final Consumer<IDeferredTask> function) {
+        return deferred(t -> {
+            function.accept(t);
+            return Cancel.empty;
+        });
     }
 
     public static IValueTask<ITask[]> executeAll(final ITask... tasks) {
-        return createDeferred(def -> {
+        return deferredValue(def -> {
             final CompoundCancelable cancelable = new CompoundCancelable();
             for (final ITask task : tasks) {
                 final ICancelable taskCancelable = task.onComplete(() -> {
@@ -95,7 +105,7 @@ public class Tasks {
 
     public static <TIn, TOut> IValueTask<TOut> then(final IValueTask<TIn> runningTask,
                                                     final Function<TIn, TOut> converter) {
-        return createDeferred(task -> {
+        return deferredValue(task -> {
             runningTask.onSuccess(valueIn -> task.setSucceeded(converter.apply(valueIn)))
                     .onError(e -> {
                         task.setErrored(e);
